@@ -168,7 +168,6 @@ class ScoringBaseNeuronType(ScoringBase):
     def insert_unit_measures(self, key, unit_measures_dict):
         key = deepcopy(key)
         keys_for_inserting = []
-        print("start inserting")
         for data_key, unit_scores in unit_measures_dict.items():
             unit_ids, unit_indices, unit_types = (
                 (self.unit_table & key) & dict(data_key=data_key)
