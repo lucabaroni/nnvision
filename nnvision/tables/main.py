@@ -225,8 +225,16 @@ class Recording(dj.Computed):
                 key["unit_type"] = int(
                     (session_dict[k]["unit_type"][i]).astype(np.float)
                 )
-                key["electrode"] = session_dict[k]["electrode"][i]
-                key["relative_depth"] = session_dict[k]["relative_depth"][i]
+                key["electrode"] = (
+                    session_dict[k]["electrode"][i]
+                    if i < len(session_dict[k]["electrode"])
+                    else session_dict[k]["electrode"][0]
+                )
+                key["relative_depth"] = (
+                    session_dict[k]["relative_depth"][i]
+                    if i < len(session_dict[k]["relative_depth"])
+                    else session_dict[k]["relative_depth"][0]
+                )
                 all_unit_keys.append(copy(key))
                 if combined_neuron_counter is not None:
                     combined_neuron_counter += (

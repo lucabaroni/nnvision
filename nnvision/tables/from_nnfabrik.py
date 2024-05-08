@@ -209,20 +209,25 @@ class MeasuresBaseNeuronType(MeasuresBase):
         return dataloaders["test"]
 
     def insert_unit_measures(self, key, unit_measures_dict):
-        key = key.copy()
+        key = deepcopy(key)
+        keys_for_inserting = []
         for data_key, unit_scores in unit_measures_dict.items():
-            for unit_index, unit_score in enumerate(unit_scores):
+            unit_ids, unit_indices, unit_types = (
+                (self.unit_table & key) & dict(data_key=data_key)
+            ).fetch("unit_id", "unit_index", "unit_type", order_by="unit_index")
+            for unit_index, (unit_score, unit_id, unit_type) in enumerate(
+                zip(unit_scores, unit_indices, unit_types)
+            ):
                 if "unit_id" in key:
                     key.pop("unit_id")
                 if "data_key" in key:
                     key.pop("data_key")
-                if "unit_type" in key:
-                    key.pop("unit_type")
-                neuron_key = dict(unit_index=unit_index, data_key=data_key)
-                unit_id = ((self.unit_table & key) & neuron_key).fetch1("unit_id")
-                unit_type = ((self.unit_table & key) & neuron_key).fetch1("unit_type")
+                assert (
+                    unit_index == unit_indices[unit_index]
+                ), "mismatch between unit ID and unit index"
                 key["unit_id"] = unit_id
                 key["unit_type"] = unit_type
                 key["unit_{}".format(self.measure_attribute)] = unit_score
                 key["data_key"] = data_key
-                self.Units.insert1(key, ignore_extra_fields=True)
+                keys_for_inserting.append(key.copy())
+        self.Units.insert(keys_for_inserting, ignore_extra_fields=True)
