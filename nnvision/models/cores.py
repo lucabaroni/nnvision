@@ -20,6 +20,7 @@ try:
     import ptrnets
     from ptrnets.utils.mlayer import clip_model, hook_model_module
     from ptrnets import vgg19_original, vgg19_norm
+    import torchextractor as tx
 except:
     pass
 
@@ -504,6 +505,7 @@ class ConvNextCore(Core2d, nn.Module):
         final_norm=None,
         final_nonlinearity=None,
         momentum=0.9,
+        stack=None,
         **kwargs
     ):
         """
@@ -530,7 +532,11 @@ class ConvNextCore(Core2d, nn.Module):
             patch_embedding_stride=patch_embedding_stride,
             cut_classification_head=cut_classification_head,
         )
+        self.stack = stack
+
         self.features = nn.Sequential()
+        if stack is not None:
+            self.extracted_features_model = tx.Extractor(backbone, module_names=stack)
         self.features.add_module("backbone", backbone)
         self.features.to(self.device)
 
@@ -568,7 +574,6 @@ class ConvNextCore(Core2d, nn.Module):
             nonlinearity = getattr(torch.nn, final_nonlinearity)()
             nonlinearity.inplace = True if hasattr(nonlinearity, "inplace") else None
             self.features.add_module("OutNonlin", nonlinearity)
-
 
     def get_input_shape_from_dict(self):
         all_shapes = []
@@ -615,7 +620,13 @@ class ConvNextCore(Core2d, nn.Module):
             input_ = rearrange(input_, "i (c cp) w h -> (i cp) c w h", c=1, cp=2)
             input_ = input_.repeat(1, 3, 1, 1)
 
-        input_ = self.features(input_)
-        if input_.shape[1] == 2:
-            input_ = rearrange(input_, "(i cp) c w h -> i (cp c) w h", cp=2)
-        return input_
+        if self.stack is None:
+            out = self.features(input_)
+        else:
+            out, features = self.extracted_features_model(input_)
+            full_out = [i for i in features.values()]
+            full_out.append(out)
+            out = torch.hstack(full_out,)
+        if out.shape[1] == 2:
+            out = rearrange(input_, "(i cp) c w h -> i (cp c) w h", cp=2)
+        return out

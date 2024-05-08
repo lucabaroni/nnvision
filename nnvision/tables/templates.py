@@ -114,13 +114,19 @@ class ScoringBase(dj.Computed):
         key = deepcopy(key)
         keys_for_inserting = []
         for data_key, unit_scores in unit_measures_dict.items():
-            for unit_index, unit_score in enumerate(unit_scores):
+            unit_ids, unit_indices = (
+                (self.unit_table & key) & dict(data_key=data_key)
+            ).fetch("unit_id", "unit_index", order_by="unit_index")
+            for unit_index, (unit_score, unit_id) in enumerate(
+                zip(unit_scores, unit_indices)
+            ):
                 if "unit_id" in key:
                     key.pop("unit_id")
                 if "data_key" in key:
                     key.pop("data_key")
-                neuron_key = dict(unit_index=unit_index, data_key=data_key)
-                unit_id = ((self.unit_table & key) & neuron_key).fetch1("unit_id")
+                assert (
+                    unit_index == unit_indices[unit_index]
+                ), "mismatch between unit ID and unit index"
                 key["unit_id"] = unit_id
                 key["unit_{}".format(self.measure_attribute)] = unit_score
                 key["data_key"] = data_key

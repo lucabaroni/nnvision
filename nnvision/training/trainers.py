@@ -799,7 +799,6 @@ def convnext_finetune_trainer(
             if (batch_no % batchping == 0) and (cb is not None):
                 cb()
 
-
     # %%%%%%%%% SECOND RUN %%%%%%%%%%%%%
     criterion = getattr(mlmeasures, loss_function)(avg=avg_loss)
     stop_closure = partial(
@@ -929,3 +928,68 @@ def convnext_finetune_trainer(
         else np.mean(validation_correlation)
     )
     return score, output, model.state_dict()
+
+
+def re_init_trainer(
+    model,
+    dataloaders,
+    seed,
+    init_type="uniform_random",
+    fill_value=None,
+    device="cuda",
+    **kwargs,
+):
+    """
+
+    Args:
+        model:
+        dataloaders:
+        seed:
+        avg_loss:
+        scale_loss:
+        loss_function:
+        stop_function:
+        loss_accum_batch_n:
+        device:
+        verbose:
+        interval:
+        patience:
+        epoch:
+        lr_init:
+        max_iter:
+        maximize:
+        tolerance:
+        restore_best:
+        lr_decay_steps:
+        lr_decay_factor:
+        min_lr:
+        cb:
+        track_training:
+        **kwargs:
+
+    Returns:
+
+    """
+    model.to(device)
+    set_random_seed(seed)
+    model.train()
+
+    if init_type == "uniform_random":
+        for n, p in model.readout.named_parameters():
+            if not "bias" in n:
+                p.data = torch.nn.init.uniform_(p, -1, 1)
+    elif init_type == "uniform":
+        for n, p in model.readout.named_parameters():
+            if not "bias" in n:
+                p.data = torch.nn.init.uniform_(p, fill_value, fill_value)
+
+    ##### Model evaluation ####################################################################################################
+    model.eval()
+
+    # Compute avg validation and test correlation
+    validation_correlation = get_correlations(
+        model, dataloaders["validation"], device=device, as_dict=False, per_neuron=False
+    )
+
+    score = np.mean(validation_correlation)
+    return score, [], model.state_dict()

@@ -443,6 +443,7 @@ def convnext_core_gauss_readout(
     shift_layers=3,
     gamma_shifter=0,
     shifter_bias=True,
+    stack=None,
 ):
     """
     A Model class of a predefined core (using models from ptrnets). Can be initialized pretrained or random.
@@ -494,6 +495,7 @@ def convnext_core_gauss_readout(
         final_norm=final_norm,
         momentum=momentum,
         final_nonlinearity=final_nonlinearity,
+        stack=stack,
     )
 
     set_random_seed(seed)
@@ -584,6 +586,7 @@ def convnext_core_shared_multihead_attention(
     replace_downsampling=False,
     gamma_embedding=0,
     embed_out_dim=None,
+    stack=None,
 ):
     """
     A Model class of a predefined core (using models from ptrnets). Can be initialized pretrained or random.
@@ -635,6 +638,7 @@ def convnext_core_shared_multihead_attention(
         final_norm=final_norm,
         momentum=momentum,
         final_nonlinearity=final_nonlinearity,
+        stack=stack,
     )
 
     set_random_seed(seed)

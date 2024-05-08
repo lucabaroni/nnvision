@@ -403,7 +403,7 @@ class Reconstruction(mixins.MEITemplateMixin, dj.Computed):
         )
         response_model.eval().cuda()
         if recon_type == "neurons":
-            responses = self.get_neuronal_responses(key)
+            responses = self.get_neuronal_responses(key) if len(unit_ids) == 0 else self.get_neuronal_responses(key)[:, unit_ids]
         else:
             responses = self.get_model_responses(
                 model=response_model,

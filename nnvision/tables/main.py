@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Callable, Iterable, Mapping, Optional, Tuple, Dict, Any
+from copy import copy
 
 from torch.nn import Module
 from torch.utils.data import DataLoader
@@ -198,10 +199,13 @@ class Recording(dj.Computed):
         )
 
         self.insert1(key, ignore_extra_fields=True)
+        all_unit_keys = []
 
         combined_neuron_counter = 0
         for k, v in session_dict.items():
-            key["data_key"] = v["data_key"] if combined_data_key is None else combined_data_key
+            key["data_key"] = (
+                v["data_key"] if combined_data_key is None else combined_data_key
+            )
             key["animal_id"] = str(v["animal_id"])
             key["n_neurons"] = v["n_neurons"]
             key["x_grid"] = v["x_grid"]
@@ -221,10 +225,19 @@ class Recording(dj.Computed):
                 key["unit_type"] = int(
                     (session_dict[k]["unit_type"][i]).astype(np.float)
                 )
-                key["electrode"] = session_dict[k]["electrode"][i]
-                key["relative_depth"] = session_dict[k]["relative_depth"][i]
-                self.Units().insert1(key, ignore_extra_fields=True)
+                key["electrode"] = (
+                    session_dict[k]["electrode"][i]
+                    if i < len(session_dict[k]["electrode"])
+                    else session_dict[k]["electrode"][0]
+                )
+                key["relative_depth"] = (
+                    session_dict[k]["relative_depth"][i]
+                    if i < len(session_dict[k]["relative_depth"])
+                    else session_dict[k]["relative_depth"][0]
+                )
+                all_unit_keys.append(copy(key))
                 if combined_neuron_counter is not None:
                     combined_neuron_counter += (
                         1 if combined_neuron_counter is not None else 0
                     )
+        self.Units().insert(all_unit_keys, ignore_extra_fields=True)
