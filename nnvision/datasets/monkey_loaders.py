@@ -547,6 +547,7 @@ def monkey_static_loader_combined(
         with open(datapath, "rb") as pkl:
             raw_data = pickle.load(pkl)
 
+        #print("file: ", datapath, responses_train.shape, responses_test.shape)
         responses_train = raw_data["training_responses"].astype(np.float32)
         responses_test = raw_data["testing_responses"].astype(np.float32)
         training_image_ids = raw_data["training_image_ids"] - image_id_offset
