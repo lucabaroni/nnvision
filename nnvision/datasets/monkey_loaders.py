@@ -2451,3 +2451,118 @@ def monkey_v4_cl(
             pickle.dump(data_info, pkl)
 
     return dataloaders if not return_data_info else data_info
+
+
+
+####
+
+from collections import namedtuple, Iterable
+
+import torch
+from torch.utils.data import Dataset, DataLoader
+
+class CustomDataset(Dataset):
+    def __init__(self, inputs, targets, bools):
+        super().__init__()
+        self.inputs = inputs          
+        self.targets = targets
+        self.bools = bools
+        self.DataPoint = namedtuple('DataPoint', ('inputs', 'targets', 'bools'))
+        
+    def __len__(self):
+        return len(self.targets)
+        
+    def __getitem__(self, index):
+        return self.DataPoint(inputs = self.inputs[index], targets = self.targets[index],bools= self.bools[index])
+
+
+
+def monkey_static_loader_combined_modified(
+    data,
+    batch_size=64,
+    seed=None,
+    train_frac=0.8,
+    subsample=1,
+    crop=((96, 96), (96, 96)),
+    scale=1.0,
+    time_bins_sum=tuple(range(12)),
+    avg=False,
+    image_file=None,
+    return_data_info=False,
+    store_data_info=True,
+    image_frac=1.0,
+    image_selection_seed=None,
+    randomize_image_selection=True,
+    img_mean=None,
+    img_std=None,
+    stimulus_location=None,
+    monitor_scaling_factor=4.57,
+    include_prev_image=False,
+    include_trial_id=False,
+    include_bools=True,
+    include_n_neurons=False,
+    normalize_resps=False,
+    **kwargs
+):
+    """
+    Function that returns cached dataloaders for monkey ephys experiments, with the responses to each image from all sessions so that the images that were shown in several session are not passed through the core several times.
+
+     creates a nested dictionary of dataloaders in the format
+            {'train' : dict_of_loaders,
+             'validation'   : dict_of_loaders,
+            'test'  : dict_of_loaders, }
+
+        in each dict_of_loaders, there will be  one dataloader per data-key (refers to a unique session ID)
+        with the format:
+            {'data-key1': torch.utils.data.DataLoader,
+             'data-key2': torch.utils.da.DataLoader, ... }
+
+    requires the types of input files:
+        - the neuronal data files. A list of pickle files, with one file per session
+        - the image file. The pickle file that contains all images.
+        - individual image files, stored as numpy array, in a subfolder
+
+    Args:
+        dataset: a string, identifying the Dataset:
+            'PlosCB19_V1', 'CSRF19_V1', 'CSRF19_V4'
+            This string will be parsed by a datajoint table
+
+        neuronal_data_files: a list paths that point to neuronal data pickle files
+        image_file: a path that points to the image file
+        image_cache_path: The path to the cached images
+        batch_size: int - batch size of the dataloaders
+        seed: int - random seed, to calculate the random split
+        train_frac: ratio of train/validation images
+        subsample: int - downsampling factor
+        crop: int or tuple - crops x pixels from each side. Example: Input image of 100x100, crop=10 => Resulting img = 80x80.
+            if crop is tuple, the expected input is a list of tuples, the specify the exact cropping from all four sides
+                i.e. [(crop_top, crop_bottom), (crop_left, crop_right)]
+        scale: float or integer - up-scale or down-scale via interpolation hte input images (default= 1)
+        time_bins_sum: sums the responses over x time bins.
+        avg: Boolean - Sums oder Averages the responses across bins.
+        include_prev_image: boolean, whether to add the previous image to the core input as a second image channel
+        include_trial_id: boolean,  whether to add the trial ID to the core input as a second image channel
+        include_bools: boolean, dataloader has a "booleans"-array that indicates which neurons were shown the image and which weren't (necessary for zeroing out the gradients from those neurons that weren't shown the image)
+        include_n_neurons: include a variable n_neurons in the datasets that records how many neurons were from each session
+
+
+    Returns: nested dictionary of dataloaders
+    """
+
+    dataset_config = locals()
+
+    # initialize dataloaders as empty dict
+    dataloaders = {"train": {}, "validation": {}, "test": {}}
+
+    train_loader = DataLoader(CustomDataset(**data['train']))
+    val_loader = DataLoader( CustomDataset(**data['validation']))
+    test_loader = DataLoader(CustomDataset(**data['test']))
+
+    data_key = "all_sessions"
+    dataloaders["train"][data_key] = train_loader
+    dataloaders["validation"][data_key] = val_loader
+    dataloaders["test"][data_key] = test_loader
+
+    return dataloaders if not return_data_info else data_info
+
+
