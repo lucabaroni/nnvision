@@ -7,7 +7,7 @@ from tqdm import tqdm
 from collections import Iterable
 
 from neuralpredictors.measures import *
-from neuralpredictors import measures as mlmeasures
+import neuralpredictors.measures.modules as mlmeasures
 from neuralpredictors.training import (
     early_stopping,
     MultipleObjectiveTracker,

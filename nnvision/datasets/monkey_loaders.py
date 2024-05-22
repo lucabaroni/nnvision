@@ -356,6 +356,7 @@ def monkey_static_loader_combined(
     include_trial_id=False,
     include_bools=True,
     include_n_neurons=False,
+    normalize_resps=False,
 ):
     """
     Function that returns cached dataloaders for monkey ephys experiments, with the responses to each image from all sessions so that the images that were shown in several session are not passed through the core several times.
@@ -614,10 +615,18 @@ def monkey_static_loader_combined(
     all_testing_ids = all_testing_ids[~(~all_test_bools).all(axis=1)]
     all_test_bools = all_test_bools[~(~all_test_bools).all(axis=1)]
 
+    if normalize_resps:
+        sn_mean = torch.load('/project/macaqueV1_resps_means.pt').reshape(1, -1).numpy()
+        sn_std =  torch.load('/project/macaqueV1_resps_stds.pt').reshape(1, -1).numpy()
+        all_responses_train = (all_responses_train- sn_mean)/sn_std + 5
+        all_responses_val = (all_responses_val- sn_mean)/sn_std + 5
+        all_responses_test = (all_responses_test- sn_mean)/sn_std + 5 
+
     # arguments for dataloader always include image IDs and responses
     args_train = [all_train_ids, all_responses_train]
     args_val = [all_validation_ids, all_responses_val]
     args_test = [all_testing_ids, all_responses_test]
+
 
     # include bools and n_neurons to args for dataloaders
     if include_bools:

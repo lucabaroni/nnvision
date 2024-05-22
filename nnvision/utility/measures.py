@@ -463,6 +463,38 @@ def get_poisson_loss(
                 else np.sum(np.hstack([v for v in poisson_loss.values()]))
             )
 
+def get_MSE(
+    model,
+    dataloaders,
+    device="cuda",
+    as_dict=False,
+    avg=False,
+    per_neuron=True,
+    eps=1e-12,
+):
+    mse = {}
+    with eval_state(model) if not is_ensemble_function(
+        model
+    ) else contextlib.nullcontext():
+        for k, v in dataloaders.items():
+            target, output = model_predictions(
+                dataloader=v, model=model, data_key=k, device=device
+            )
+            loss = (output - target)**2
+            loss = torch.tensor(loss)
+            mse[k] = torch.mean(loss, axis=0) if avg else torch.sum(loss, axis=0)
+    if as_dict:
+        return mse
+    else:
+        if per_neuron:
+            return np.hstack([v for v in mse.values()])
+        else:
+            return (
+                np.mean(np.hstack([v for v in mse.values()]))
+                if avg
+                else np.sum(np.hstack([v for v in mse.values()]))
+            )
+
 
 def get_repeats(dataloader, min_repeats=2):
     # save the responses of all neuron to the repeats of an image as an element in a list
