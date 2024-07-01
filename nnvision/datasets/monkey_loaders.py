@@ -570,6 +570,13 @@ def monkey_static_loader_combined(
         elif len(responses_test.shape) == 2:
             responses_test = responses_test.transpose((1, 0))
             responses_train = responses_train.transpose((1, 0))
+        
+        if normalize_resps:
+           responses_mean = responses_train.mean(axis=0, keepdims=True)
+           responses_std = responses_train.std(axis=0, keepdims=True)
+           responses_test = (responses_test - responses_mean)/responses_std
+           responses_train = (responses_train - responses_mean)/responses_std
+
 
         # neuron indices for this session
         n_start = np.sum(n_neurons[0:i])
@@ -615,12 +622,12 @@ def monkey_static_loader_combined(
     all_testing_ids = all_testing_ids[~(~all_test_bools).all(axis=1)]
     all_test_bools = all_test_bools[~(~all_test_bools).all(axis=1)]
 
-    if normalize_resps:
-        sn_mean = torch.load('/project/macaqueV1_resps_means.pt').reshape(1, -1).numpy()
-        sn_std =  torch.load('/project/macaqueV1_resps_stds.pt').reshape(1, -1).numpy()
-        all_responses_train = (all_responses_train- sn_mean)/sn_std + 5
-        all_responses_val = (all_responses_val- sn_mean)/sn_std + 5
-        all_responses_test = (all_responses_test- sn_mean)/sn_std + 5 
+    # if normalize_resps:
+    #     sn_mean = torch.load('/project/macaqueV1_resps_means.pt').reshape(1, -1).numpy()
+    #     sn_std =  torch.load('/project/macaqueV1_resps_stds.pt').reshape(1, -1).numpy()
+    #     all_responses_train = (all_responses_train-sn_mean)/sn_std
+    #     all_responses_val = (all_responses_val-sn_mean)/sn_std
+    #     all_responses_test = (all_responses_test-sn_mean)/sn_std 
 
     # arguments for dataloader always include image IDs and responses
     args_train = [all_train_ids, all_responses_train]
