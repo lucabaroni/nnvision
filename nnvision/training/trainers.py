@@ -57,6 +57,7 @@ def nnvision_trainer(
     return_test_score=False,
     batchping=1000,
     adamw=False,
+    fine_tune='full',
     **kwargs,
 ):
     """
@@ -85,6 +86,7 @@ def nnvision_trainer(
         min_lr:
         cb:
         track_training:
+        fine_tune:
         **kwargs:
 
     Returns:
@@ -130,10 +132,18 @@ def nnvision_trainer(
 
     n_iterations = len(LongCycler(dataloaders["train"]))
 
+    parameters_to_train = model.parameters()
+    if fine_tune == "core":
+        print('finetune core')
+        parameters_to_train = model.core.parameters()
+    elif fine_tune == "readout":
+        print('finetune readout')
+        parameters_to_train = model.readout.parameters()
+
     if adamw:
-        optimizer = torch.optim.AdamW(model.parameters(), lr=lr_init)
+        optimizer = torch.optim.AdamW(parameters_to_train, lr=lr_init)
     else:
-        optimizer = torch.optim.Adam(model.parameters(), lr=lr_init)
+        optimizer = torch.optim.Adam(parameters_to_train, lr=lr_init)
 
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer,
