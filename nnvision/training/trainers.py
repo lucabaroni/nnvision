@@ -57,9 +57,7 @@ def nnvision_trainer(
     return_test_score=False,
     batchping=1000,
     adamw=False,
-    train_only_core = False, 
-    train_only_readout = False,
-    fine_tune=None,
+    fine_tune='none',
     **kwargs,
 ):
     """
