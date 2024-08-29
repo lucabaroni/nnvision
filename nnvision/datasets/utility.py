@@ -246,6 +246,24 @@ class ImageCache:
             self.img_mean = np.float32(img_mean.item())
             self.img_std = np.float32(img_std.item())
 
+    def center_scale_of_images(self, update_stats=True):
+        """
+        center scale of pixel values of images in cache around 0
+        """
+        images = self.loaded_images
+        img_mean = images.mean()
+        img_std = images.std()
+        pixel_max = images.max()
+        pixel_min = images.min()
+
+        for key in self.cache:
+            self.cache[key] = (self.cache[key] - (pixel_min + pixel_max)/2)
+
+        if update_stats:
+            self.img_mean = np.float32(img_mean.item())
+            self.img_std = np.float32(img_std.item())
+
+
     @property
     def image_shape(self):
         if self.cache_size > 0:

@@ -357,6 +357,7 @@ def monkey_static_loader_combined(
     include_bools=True,
     include_n_neurons=False,
     normalize_resps=False,
+    center_inputs=False,
 ):
     """
     Function that returns cached dataloaders for monkey ephys experiments, with the responses to each image from all sessions so that the images that were shown in several session are not passed through the core several times.
@@ -477,6 +478,8 @@ def monkey_static_loader_combined(
             cache.zscore_images(update_stats=True)
             img_mean = cache.img_mean
             img_std = cache.img_std
+            if center_inputs:
+                cache.center_scale_of_images()
 
     n_images = len(cache)
     data_info = {}
@@ -576,8 +579,7 @@ def monkey_static_loader_combined(
            responses_std = responses_train.std(axis=0, keepdims=True)
            responses_test = (responses_test - responses_mean)/responses_std
            responses_train = (responses_train - responses_mean)/responses_std
-
-
+           
         # neuron indices for this session
         n_start = np.sum(n_neurons[0:i])
         n_end = np.sum(n_neurons[0 : i + 1])
